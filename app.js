@@ -250,10 +250,6 @@ function statusClass(usage) {
   return "status-normal";
 }
 
-function clamp(v, min, max) {
-  return Math.min(max, Math.max(min, v));
-}
-
 function renderDashboard() {
   panels.dashboard.innerHTML = "";
   const planned = plannedCategories();
@@ -277,52 +273,6 @@ function renderDashboard() {
     </div>
   `;
   panels.dashboard.appendChild(top);
-
-  const chartCard = document.createElement("div");
-  chartCard.className = "card";
-  const usagePct = clamp(usageTotal * 100, 0, 100);
-  const exPct = clamp(state.totalCapital > 0 ? (actualException / state.totalCapital) * 100 : 0, 0, 100);
-  chartCard.innerHTML = `
-    <h3>图形化仓位视图</h3>
-    <div class="viz-grid">
-      <div class="viz-block">
-        <div class="donut" style="--pct:${usagePct}; --color:#2563eb;"></div>
-        <div>
-          <h4>总仓位使用率</h4>
-          <p class="${statusClass(usageTotal)}">${fmtPct(usagePct)}</p>
-        </div>
-      </div>
-      <div class="viz-block">
-        <div class="donut" style="--pct:${exPct}; --color:#b91c1c;"></div>
-        <div>
-          <h4>计划外持仓占比</h4>
-          <p class="${statusClass(exPct / 100)}">${fmtPct(exPct)}</p>
-        </div>
-      </div>
-    </div>
-    <div class="bar-list" id="categoryBars"></div>
-  `;
-  panels.dashboard.appendChild(chartCard);
-
-  const bars = chartCard.querySelector("#categoryBars");
-  planned.forEach((c) => {
-    const target = (state.totalCapital * Number(c.targetPercent || 0)) / 100;
-    const actual = categoryActual(c.id);
-    const usage = target > 0 ? actual / target : 0;
-    const barPct = clamp(usage * 100, 0, 100);
-    const row = document.createElement("div");
-    row.className = "bar-row";
-    row.innerHTML = `
-      <div class="bar-head">
-        <span>${c.name}</span>
-        <span class="${statusClass(usage)}">${fmtPct(usage * 100)}</span>
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill ${statusClass(usage)}" style="width:${barPct}%"></div>
-      </div>
-    `;
-    bars.appendChild(row);
-  });
 
   const plannedCard = document.createElement("div");
   plannedCard.className = "card";
