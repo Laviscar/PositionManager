@@ -122,7 +122,7 @@ function renderPlan() {
     msg.textContent = `计划内分类合计：${fmtPct(totalPct)}（需等于 100%）`;
   }
 
-  card.querySelector("#totalCapital").addEventListener("change", (e) => {
+  card.querySelector("#totalCapital").addEventListener("input", (e) => {
     state.totalCapital = Math.max(0, Number(e.target.value || 0));
     saveState();
     render();
@@ -150,7 +150,7 @@ function renderPlan() {
   });
 
   card.querySelectorAll(".pct-input").forEach((input) => {
-    input.addEventListener("change", (e) => {
+    input.addEventListener("input", (e) => {
       const cat = state.categories.find((c) => c.id === e.target.dataset.id);
       if (cat) cat.targetPercent = Math.max(0, Number(e.target.value || 0));
       saveState();
@@ -250,10 +250,6 @@ function statusClass(usage) {
   return "status-normal";
 }
 
-function clamp(v, min, max) {
-  return Math.min(max, Math.max(min, v));
-}
-
 function renderDashboard() {
   panels.dashboard.innerHTML = "";
   const planned = plannedCategories();
@@ -278,52 +274,6 @@ function renderDashboard() {
   `;
   panels.dashboard.appendChild(top);
 
-  const chartCard = document.createElement("div");
-  chartCard.className = "card";
-  const usagePct = clamp(usageTotal * 100, 0, 100);
-  const exPct = clamp(state.totalCapital > 0 ? (actualException / state.totalCapital) * 100 : 0, 0, 100);
-  chartCard.innerHTML = `
-    <h3>图形化仓位视图</h3>
-    <div class="viz-grid">
-      <div class="viz-block">
-        <div class="donut" style="--pct:${usagePct}; --color:#2563eb;"></div>
-        <div>
-          <h4>总仓位使用率</h4>
-          <p class="${statusClass(usageTotal)}">${fmtPct(usagePct)}</p>
-        </div>
-      </div>
-      <div class="viz-block">
-        <div class="donut" style="--pct:${exPct}; --color:#b91c1c;"></div>
-        <div>
-          <h4>计划外持仓占比</h4>
-          <p class="${statusClass(exPct / 100)}">${fmtPct(exPct)}</p>
-        </div>
-      </div>
-    </div>
-    <div class="bar-list" id="categoryBars"></div>
-  `;
-  panels.dashboard.appendChild(chartCard);
-
-  const bars = chartCard.querySelector("#categoryBars");
-  planned.forEach((c) => {
-    const target = (state.totalCapital * Number(c.targetPercent || 0)) / 100;
-    const actual = categoryActual(c.id);
-    const usage = target > 0 ? actual / target : 0;
-    const barPct = clamp(usage * 100, 0, 100);
-    const row = document.createElement("div");
-    row.className = "bar-row";
-    row.innerHTML = `
-      <div class="bar-head">
-        <span>${c.name}</span>
-        <span class="${statusClass(usage)}">${fmtPct(usage * 100)}</span>
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill ${statusClass(usage)}" style="width:${barPct}%"></div>
-      </div>
-    `;
-    bars.appendChild(row);
-  });
-
   const plannedCard = document.createElement("div");
   plannedCard.className = "card";
   plannedCard.innerHTML = "<h3>计划内分类</h3>";
@@ -335,23 +285,14 @@ function renderDashboard() {
     const actual = categoryActual(c.id);
     const remain = target - actual;
     const usage = target > 0 ? actual / target : 0;
-    const usageDisplay = usage * 100;
-    const usageCapped = clamp(usageDisplay, 0, 100);
-    const boardColor = usage > 1 ? "#b91c1c" : usage >= 0.9 ? "#b45309" : "#2563eb";
     const item = document.createElement("div");
-    item.className = "metric category-board";
+    item.className = "metric";
     item.innerHTML = `
-      <h4>${c.name}（分类看板）</h4>
-      <div class="board-main">
-        <div class="donut" style="--pct:${usageCapped}; --color:${boardColor};"></div>
-        <div>
-          <div class="${statusClass(usage)} board-usage">${fmtPct(usageDisplay)}</div>
-          <small class="muted">以该分类目标金额为 100%</small>
-        </div>
-      </div>
+      <h4>${c.name}</h4>
       <div>目标：${fmtAmount(target)}</div>
       <div>已用：${fmtAmount(actual)}</div>
       <div class="${remain < 0 ? "status-danger" : ""}">剩余：${fmtAmount(remain)}</div>
+      <div class="${statusClass(usage)}">使用率：${fmtPct(usage * 100)}</div>
     `;
     grid.appendChild(item);
   });
